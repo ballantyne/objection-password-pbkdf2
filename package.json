@@ -1,0 +1,17 @@
+{
+  "name": "objection-password-pbkdf2",
+  "version": "1.0.0",
+  "description": "Objection password plugin that uses the node.js standard lib",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha "
+  },
+  "author": "Scott Ballantyne",
+  "license": "MIT",
+  "devDependencies": {
+    "knex": "^0.19.3",
+    "mocha": "^6.2.0",
+    "objection": "^1.6.9",
+    "sqlite3": "^4.1.0"
+  }
+}
