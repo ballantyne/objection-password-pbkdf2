@@ -1,8 +1,23 @@
-const crypto = require('crypto');
+import { 
+  pbkdf2, 
+  pbkdf2Sync, 
+  randomBytes 
+} from 'crypto';
+
+import objection from 'objection/typings/objection';
 
 const ROUNDS = 12;
 
-module.exports = (options) => {
+interface PluginOptions {
+  passwordField?: string;
+  saltField?: string;
+  rounds?: number;
+  keylen?: number;
+  digest?: string;
+  multiplier?: number;
+}
+
+module.exports = (options:PluginOptions) => {
   options = Object.assign({
     passwordField: 'password',
     saltField: 'salt',
@@ -14,9 +29,10 @@ module.exports = (options) => {
 
   options.rounds = options.rounds * options.multiplier;
 
-  return (Model) => {
+  return (Model: objection.ModelClass<any>) => {
     return class extends Model {
-      $beforeInsert(context) {
+
+      $beforeInsert(context:objection.QueryContext) {
         var self = this;
         const toResolve = super.$beforeInsert(context);
         
@@ -25,19 +41,25 @@ module.exports = (options) => {
         }); 
       }
 
-      $beforeUpdate (query, context) {
+      $beforeUpdate(query:objection.ModelOptions, context:objection.QueryContext) {
         var self = this;
         const toResolve = super.$beforeUpdate(query, context);
         return Promise.resolve(toResolve).then(() => {
           if (query.patch && self[options.passwordField] === undefined) {
             return;
           }
+          
           return self.generateHash();
-        });     
+        });       
       }
       
-      verifyPassword (password) {
-        var hash = crypto.pbkdf2Sync(password, this.salt, options.rounds, options.keylen, options.digest).toString('hex')
+      verifyPassword (password:string) {
+        var hash = pbkdf2Sync(password, 
+          this.salt, 
+          options.rounds, 
+          options.keylen, 
+          options.digest).toString('hex')
+        
         return hash == this.password;  
       }
 
@@ -45,23 +67,33 @@ module.exports = (options) => {
         var self = this;
         return new Promise((resolve, reject) => {
           if (self[options.saltField] == undefined) {
-            self[options.saltField] = crypto.randomBytes(16).toString('hex');
+            self[options.saltField] = randomBytes(16).toString('hex');
           }
+          
           var password = self[options.passwordField];
           if (password == undefined) {
             reject();
           } else {
-            crypto.pbkdf2(self[options.passwordField], self[options.saltField], options.rounds, options.keylen, options.digest, (err, hash) => {
+            pbkdf2(self[options.passwordField], 
+              self[options.saltField], 
+              options.rounds, 
+              options.keylen, 
+              options.digest, 
+            (err, hash) => {
+
               if (err) {
                 reject(err);
               } else {
                 self[options.passwordField] = hash.toString('hex');
                 resolve();
               }
+
             })       
           }
         });
+
       }
+
     }
   }
 }

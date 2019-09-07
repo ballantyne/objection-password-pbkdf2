@@ -1,4 +1,4 @@
-const Pbkdf = require('..');
+const Pbkdf = require('../build');
 const Knex = require('knex');
 const Model = require('objection').Model;
 const assert = require('assert');
@@ -90,6 +90,7 @@ describe('Objection', function() {
           assert.equal(person.verifyPassword('person'), true);
         })
       });
+
     })
   })
 })
